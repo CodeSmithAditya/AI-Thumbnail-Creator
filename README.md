@@ -20,7 +20,7 @@ Here are a few sample thumbnails generated using the web application.
 
 | Title: "Futuristic City at Night" | Title: "A Cat in a Spacesuit" |
 | :----------------------------------------------------------: | :----------------------------------------------------------: |
-| <img src="./static/output/thumbnail_1751086819.png" width="400"> | <img src="./static/output/thumbnail_1751085511.png" width="400"> |
+| <img src="./static/output/thumbnail_1751184130.png" width="400"> | <img src="./static/output/thumbnail_1751184110.png" width="400"> |
 
 ---
 

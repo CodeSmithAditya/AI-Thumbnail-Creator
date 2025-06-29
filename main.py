@@ -10,7 +10,7 @@ import base64
 from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
 import textwrap
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 # --- Configuration Constants ---
 THUMBNAIL_WIDTH: int = 1024
@@ -21,13 +21,6 @@ FONT_SIZE: int = 60
 def generate_image(prompt_text: str, save_path: str = "thumbnail_base.png") -> Optional[str]:
     """
     Generates a base image using the official Stability AI API.
-
-    Args:
-        prompt_text (str): The descriptive prompt to send to the AI.
-        save_path (str): The local file path to save the generated image to.
-
-    Returns:
-        Optional[str]: The path to the saved image if successful, otherwise None.
     """
     print(f"-> Generating image for prompt: '{prompt_text[:40]}...'")
     load_dotenv()
@@ -42,7 +35,7 @@ def generate_image(prompt_text: str, save_path: str = "thumbnail_base.png") -> O
     headers: Dict[str, str] = {
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "Authorization": f"Bearer {api_key}" # Authorization uses a Bearer Token
+        "Authorization": f"Bearer {api_key}"
     }
     
     payload: Dict[str, Any] = {
@@ -56,10 +49,9 @@ def generate_image(prompt_text: str, save_path: str = "thumbnail_base.png") -> O
 
     try:
         response = requests.post(api_url, headers=headers, json=payload)
-        response.raise_for_status() # Raise an error for bad status codes (4xx or 5xx)
+        response.raise_for_status()
         data: Dict[str, Any] = response.json()
 
-        # The Stability AI API returns image data encoded in base64
         if data.get('artifacts'):
             for image_artifact in data["artifacts"]:
                 image_data = base64.b64decode(image_artifact["base64"])
@@ -78,17 +70,12 @@ def generate_image(prompt_text: str, save_path: str = "thumbnail_base.png") -> O
 
 def add_text_to_image(base_image_path: str, title_text: str, save_path: str) -> None:
     """
-    Overlays title text onto a base image, with wrapping and a drop shadow.
-
-    Args:
-        base_image_path (str): Path to the background image.
-        title_text (str): The text to write on the image.
-        save_path (str): Path to save the final composite image.
+    Overlays title text onto a base image, with wrapping, a drop shadow,
+    and a semi-transparent background for maximum readability.
     """
     print(f"-> Adding text to {base_image_path}...")
     try:
         image = Image.open(base_image_path).convert("RGBA")
-        canvas = ImageDraw.Draw(image)
         font = ImageFont.truetype(FONT_FILE, FONT_SIZE)
     except FileNotFoundError:
         print(f"ERROR: Font file not found at '{FONT_FILE}'.")
@@ -97,45 +84,60 @@ def add_text_to_image(base_image_path: str, title_text: str, save_path: str) -> 
         print(f"ERROR: Could not open image at '{base_image_path}'.")
         return
 
+    # Create a separate, transparent layer for drawing
+    text_layer = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    canvas = ImageDraw.Draw(text_layer)
+
     margin: int = 60
     max_width_chars: int = 30
     wrapped_text: str = "\n".join(textwrap.wrap(title_text, width=max_width_chars))
 
-    # Use textbbox to get the precise pixel size of the rendered text block
+    # Get the bounding box of the text
     text_box = canvas.textbbox((0, 0), wrapped_text, font=font)
     text_height = text_box[3] - text_box[1]
-    
-    # Calculate X and Y position to align the text block to the bottom-left
+    text_width = text_box[2] - text_box[0]
+
+    # Calculate positions, explicitly casting all final values to integers
     text_x: int = margin
     text_y: int = int(THUMBNAIL_HEIGHT - text_height - margin)
+    
+    # Define coordinates for the background box
+    box_padding: int = 20
+    # The `rectangle` method requires a list of Ints, so we cast each one
+    box_coords: List[int] = [
+        int(text_x - box_padding),
+        int(text_y - box_padding),
+        int(text_x + text_width + box_padding),
+        int(text_y + text_height + box_padding)
+    ]
+    canvas.rectangle(box_coords, fill=(0, 0, 0, 128))
 
-    # Draw a subtle drop shadow for readability
-    shadow_offset: int = 2
-    shadow_color: str = "black"
-    canvas.text((text_x + shadow_offset, text_y + shadow_offset), wrapped_text, font=font, fill=shadow_color)
+    # Define positions for text and shadow, ensuring they are integers
+    shadow_x = text_x + 2
+    shadow_y = text_y + 2
     
-    # Draw the main white text
-    text_color: str = "white"
-    canvas.text((text_x, text_y), wrapped_text, font=font, fill=text_color)
+    # Draw the text shadow and the main text
+    canvas.text((shadow_x, shadow_y), wrapped_text, font=font, fill="black")
+    canvas.text((text_x, text_y), wrapped_text, font=font, fill="white")
     
-    # Convert back to RGB for saving as a high-quality PNG
-    image = image.convert("RGB")
-    image.save(save_path)
+    # Composite the layer containing the box and text onto the original image
+    final_image = Image.alpha_composite(image, text_layer)
+    
+    # Convert back to RGB for saving and better compatibility
+    final_image = final_image.convert("RGB")
+    final_image.save(save_path)
     print(f"   - Final thumbnail saved to {save_path}")
 
 
 def create_thumbnail_workflow(title: str, output_filename: str) -> None:
     """
     Runs the full workflow from title to final thumbnail.
-
-    Args:
-        title (str): The blog title to be turned into a thumbnail.
-        output_filename (str): The full path where the final image should be saved.
     """
     base_prompt: str = f"{title}, professional digital art, clean illustration, vibrant colors, cinematic lighting, 8k"
     
-    # Enrich the prompt with contextual keywords for better image relevance
     title_lower: str = title.lower()
+    
+    # Enrich the prompt with contextual keywords for better image relevance
     if "python" in title_lower or "data structures" in title_lower:
         image_prompt: str = f"{base_prompt}, abstract code visualization, data nodes, network, python logo"
     elif "docker" in title_lower:
@@ -147,15 +149,11 @@ def create_thumbnail_workflow(title: str, output_filename: str) -> None:
     else:
         image_prompt = f"{base_prompt}, award-winning art"
 
-    # Define a temporary path for the base image (before text is added)
     temp_base_image_path = "thumbnail_base.png"
     
-    # Generate the base image using the AI API
     base_image_path: Optional[str] = generate_image(image_prompt, save_path=temp_base_image_path)
     
-    # If image generation was successful, add text and clean up
     if base_image_path:
         add_text_to_image(base_image_path, title, output_filename)
-        # Clean up the temporary base image after use
         if os.path.exists(base_image_path):
             os.remove(base_image_path)
