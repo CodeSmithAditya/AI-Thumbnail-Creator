@@ -6,6 +6,8 @@
 ![Framework](https://img.shields.io/badge/Flask-2.3-black.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
+</div>
+
 This project is a full-stack web application that creates eye-catching blog thumbnails. A user can enter any blog title into the web interface, and the Python Flask backend uses the **Stability AI API** to generate a relevant background image and intelligently places the title text onto the image.
 
 This tool was updated to a full-stack application with a frontend and backend to meet the mandatory resubmission requirements, demonstrating skills in web development, API integration, and professional software architecture.
