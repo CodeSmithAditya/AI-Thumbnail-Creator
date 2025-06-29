@@ -1,0 +1,16 @@
+# Python virtual environment
+venv/
+
+# Environment variables
+.env
+
+# IDE and system files
+.vscode/
+__pycache__/
+
+# Temporary files from VS Code extensions
+tempCodeRunnerFile.python
+*.pyc
+
+# Temporary image files created by the script
+thumbnail_base.png

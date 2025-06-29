@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Thumbnail Creator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        AI Thumbnail Creator
+    </header>
+
+    <div class="container">
+        <h1>Welcome!</h1>
+        <p>Enter a blog title below to generate a custom thumbnail with AI.</p>
+        <form id="thumbnail-form">
+            <input type="text" id="title-input" name="title" placeholder="e.g., The Future of Space Exploration" required>
+            <button type="submit" id="generate-button">Generate Thumbnail</button>
+        </form>
+        <div class="example-prompts">
+            <span>Try an example:</span>
+            <button type="button" class="prompt-chip">A Cat in a Spacesuit</button>
+            <button type="button" class="prompt-chip">Futuristic City at Night</button>
+            <button type="button" class="prompt-chip">A Hidden Forest Waterfall</button>
+        </div>
+        <div id="result-container">
+            <div id="loader" class="hidden"></div>
+            <img id="result-image" src="" alt="Generated Thumbnail" class="hidden">
+            <a id="download-link" class="button hidden" href="" download="ai_thumbnail.png">Download Image</a>
+        </div>
+    </div>
+
+    <footer>
+        Developed by Aditya Das | <a href="https://github.com/CodeSmithAditya/AI-Thumbnail-Creator" target="_blank">View on GitHub</a>
+    </footer>
+
+    <script>
+        /**
+         * Main event listener for the thumbnail generation form.
+         * Handles form submission, displays loading states, sends the request to the backend,
+         * and processes the success or error response.
+         */
+        document.getElementById('thumbnail-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Get references to all the necessary UI elements
+            const title = document.getElementById('title-input').value;
+            const loader = document.getElementById('loader');
+            const resultImage = document.getElementById('result-image');
+            const downloadLink = document.getElementById('download-link');
+            const generateButton = document.getElementById('generate-button');
+
+            // 1. Update UI to show a loading state
+            loader.classList.remove('hidden');
+            resultImage.classList.add('hidden');
+            downloadLink.classList.add('hidden');
+            generateButton.disabled = true;
+            generateButton.innerHTML = '<span class="button-loader"></span>Generating...';
+
+            try {
+                // 2. Send the title to the Flask backend
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: title })
+                });
+
+                const data = await response.json();
+
+                // 3. Handle the response from the backend
+                if (response.ok && data.image_url) {
+                    // On success, display the new image and download button
+                    resultImage.src = data.image_url;
+                    resultImage.classList.remove('hidden');
+                    downloadLink.href = data.image_url;
+                    downloadLink.classList.remove('hidden');
+                } else {
+                    // On failure, show an error message from the server
+                    alert(data.error || 'An unknown error occurred on the server.');
+                }
+
+            } catch (error) {
+                // This catches network errors if the server can't be reached
+                alert('A network error occurred. Please check your connection.');
+            } finally {
+                // 4. Reset the UI back to its original state
+                loader.classList.add('hidden');
+                generateButton.disabled = false;
+                generateButton.innerHTML = 'Generate Thumbnail';
+            }
+        });
+
+        /**
+         * Adds click functionality to the example prompt chips.
+         * When clicked, a chip's text is placed into the main input field.
+         */
+        document.querySelectorAll('.prompt-chip').forEach(button => {
+            button.addEventListener('click', function() {
+                document.getElementById('title-input').value = this.innerText;
+            });
+        });
+    </script>
+</body>
+</html>
