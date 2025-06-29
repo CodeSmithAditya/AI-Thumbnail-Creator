@@ -111,7 +111,7 @@ You will need Python 3.8+ and an active API Key from the **[Stability AI Platfor
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License. See [LICENSE](./LICENSE) for more information.
 
 ---
 
