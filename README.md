@@ -14,19 +14,7 @@ This tool was updated to a full-stack application with a frontend and backend to
 
 ---
 
-## 📋 Table of Contents
-
-- [Live Demo Gallery](#live-demo-gallery)
-- [Technology Stack](#technology-stack)
-- [How It Works](#how-it-works)
-- [Key Features](#key-features)
-- [Getting Started](#getting-started)
-- [License](#license)
-- [Contact](#contact)
-
----
-
-## 🖼️ Live Demo Gallery
+## 🖼️ Generated Gallery
 
 Here are a few sample thumbnails generated using the web application.
 
